@@ -1,0 +1,10 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { userIdOrResponse, amountSchema, errorResponse, dateOnly } from "@/lib/api";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+import { notifyGoalMilestones } from "@/services/savings.service";
+const schema = z.object({ name: z.string().trim().min(2).max(120).optional(), targetAmount: amountSchema.optional(), currentAmount: amountSchema.optional(), targetDate: z.coerce.date().optional().nullable(), status: z.enum(["ACTIVE", "COMPLETED", "PAUSED"]).optional() });
+type Ctx = { params: Promise<{ id: string }> };
+export async function PATCH(request: Request, { params }: Ctx) { const { userId, response } = await userIdOrResponse(); if (response) return response; const body = schema.safeParse(await request.json().catch(() => null)); if (!body.success || !Object.keys(body.data ?? {}).length) return errorResponse("INVALID_INPUT", "Enter valid goal changes."); const { id } = await params; const current = await prisma.savingsGoal.findFirst({ where: { id, userId: userId! } }); if (!current) return errorResponse("NOT_FOUND", "Savings goal not found.", 404); const target = body.data.targetAmount ?? current.targetAmount.toString(); const saved = body.data.currentAmount ?? current.currentAmount.toString(); const status = body.data.status ?? (new Prisma.Decimal(saved).greaterThanOrEqualTo(target) ? "COMPLETED" : "ACTIVE"); const data = await prisma.savingsGoal.update({ where: { id }, data: { ...body.data, targetDate: body.data.targetDate ? dateOnly(body.data.targetDate) : body.data.targetDate, status } }); await notifyGoalMilestones(userId!, data.id, data.name, data.currentAmount, data.targetAmount); return NextResponse.json({ data }); }
+export async function DELETE(_request: Request, { params }: Ctx) { const { userId, response } = await userIdOrResponse(); if (response) return response; const { id } = await params; const result = await prisma.savingsGoal.deleteMany({ where: { id, userId: userId! } }); return result.count ? NextResponse.json({ data: { deleted: true } }) : errorResponse("NOT_FOUND", "Savings goal not found.", 404); }

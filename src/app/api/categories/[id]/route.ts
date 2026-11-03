@@ -1,0 +1,8 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { userIdOrResponse, errorResponse } from "@/lib/api";
+import { prisma } from "@/lib/prisma";
+const schema = z.object({ name: z.string().trim().min(1).max(50).optional(), color: z.string().regex(/^#[\da-fA-F]{6}$/).optional(), icon: z.string().trim().max(40).optional() });
+type Ctx = { params: Promise<{ id: string }> };
+export async function PATCH(request: Request, { params }: Ctx) { const { userId, response } = await userIdOrResponse(); if (response) return response; const body = schema.safeParse(await request.json().catch(() => null)); if (!body.success || !Object.keys(body.data ?? {}).length) return errorResponse("INVALID_INPUT", "Enter valid category changes."); const { id } = await params; try { const result = await prisma.category.updateMany({ where: { id, userId: userId! }, data: body.data }); if (!result.count) return errorResponse("NOT_FOUND", "Category not found.", 404); return NextResponse.json({ data: await prisma.category.findFirst({ where: { id, userId: userId! } }) }); } catch { return errorResponse("DUPLICATE_CATEGORY", "That category name is already in use.", 409); } }
+export async function DELETE(_request: Request, { params }: Ctx) { const { userId, response } = await userIdOrResponse(); if (response) return response; const { id } = await params; try { const result = await prisma.category.deleteMany({ where: { id, userId: userId! } }); return result.count ? NextResponse.json({ data: { deleted: true } }) : errorResponse("NOT_FOUND", "Category not found.", 404); } catch { return errorResponse("CATEGORY_IN_USE", "Move or delete transactions and budgets using this category first.", 409); } }

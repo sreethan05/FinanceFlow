@@ -1,0 +1,17 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { SignOutButton } from "@/components/sign-out-button";
+import { LayoutDashboard, ArrowLeftRight, ChartNoAxesCombined, Target, Repeat2, Sparkles, ReceiptText, Settings, Search } from "lucide-react";
+import { NotificationsMenu } from "@/components/notifications-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
+
+const items = [
+  ["Overview", "/overview", LayoutDashboard], ["Transactions", "/transactions", ArrowLeftRight], ["Budgets", "/budgets", ChartNoAxesCombined],
+  ["Analytics", "/analytics", ChartNoAxesCombined], ["Recurring", "/recurring", Repeat2], ["AI assistant", "/assistant", Sparkles], ["AI insights", "/insights", Sparkles], ["Receipts", "/receipts", ReceiptText], ["Savings goals", "/savings", Target], ["Settings", "/settings", Settings],
+] as const;
+export async function DashboardShell({ children, active }: { children: React.ReactNode; active: string }) {
+  const session = await auth(); if (!session?.user?.id) redirect("/login");
+  const today = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", weekday: "long", day: "numeric", month: "long" }).format(new Date());
+  return <div className="min-h-screen md:flex"><aside className="ff-sidebar flex w-full flex-col px-4 py-5 md:fixed md:inset-y-0 md:w-[248px] md:px-5"><Link href="/overview" className="mb-9 flex items-center gap-3 px-2 text-lg font-bold tracking-tight"><span className="grid size-9 place-items-center rounded-xl bg-[#173e34] text-white">◉</span>FinanceFlow</Link><div className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">Workspace</div><nav className="space-y-1">{items.map(([label, href, Icon]) => <Link key={href} href={href} className={`ff-link ${active === label ? "active" : ""}`}><Icon size={17} strokeWidth={1.8}/>{label}</Link>)}</nav><div className="mt-auto hidden rounded-xl bg-[#eff5f1] p-4 md:block"><p className="text-sm font-semibold text-[#244238]">Make room for a goal</p><p className="mt-1 text-xs leading-5 text-[#70827a]">A little planning today can go a long way.</p><Link href="/savings" className="mt-3 inline-block text-xs font-semibold text-emerald-800">Explore savings goals →</Link></div><div className="mt-5 flex items-center gap-3 border-t border-slate-200 pt-4"><div className="grid size-9 place-items-center rounded-full bg-[#e4eee8] text-xs font-bold text-emerald-800">{session.user.name?.slice(0,1) ?? session.user.email?.slice(0,1).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{session.user.name ?? "Your account"}</p><p className="truncate text-xs text-slate-500">{session.user.email}</p></div><SignOutButton/></div></aside><main className="min-h-screen flex-1 md:ml-[248px]"><header className="flex h-[70px] items-center justify-between border-b border-slate-200/80 bg-white/80 px-6 md:px-10"><div className="hidden items-center gap-2 text-sm text-slate-400 md:flex"><Search size={16}/><span>Search anything</span><kbd className="ml-2 rounded border px-1.5 py-0.5 text-[10px]">⌘ K</kbd></div><div className="flex items-center gap-3"><span className="text-sm text-slate-500">{today}</span><NotificationsMenu/><ThemeToggle/><span className="grid size-9 place-items-center rounded-full bg-[#e4eee8] text-sm font-bold text-emerald-800">{session.user.name?.slice(0,1) ?? "F"}</span></div></header><div className="mx-auto max-w-[1500px] p-5 md:p-9">{children}</div></main></div>;
+}

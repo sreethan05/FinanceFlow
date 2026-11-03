@@ -1,0 +1,3 @@
+import Link from "next/link";import {ResetPasswordForm} from "@/components/password-recovery-form";
+type Props={searchParams:Promise<{token?:string}>};
+export default async function Page({searchParams}:Props){const {token=""}=await searchParams;return <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6"><Link href="/login" className="text-lg font-semibold">◉ FinanceFlow</Link><h1 className="mt-10 text-3xl font-semibold">Choose a new password</h1><p className="mt-2 text-sm text-slate-500">Use at least 10 characters.</p>{token?<ResetPasswordForm token={token}/>:<p className="mt-6 text-sm text-rose-600">The reset link is missing. Request a new one.</p>}</main>}

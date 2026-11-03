@@ -1,0 +1,2 @@
+import Link from "next/link";import {ForgotPasswordForm} from "@/components/password-recovery-form";
+export default function Page(){return <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6"><Link href="/login" className="text-lg font-semibold">◉ FinanceFlow</Link><h1 className="mt-10 text-3xl font-semibold">Reset your password</h1><p className="mt-2 text-sm text-slate-500">Enter the email address for your account. If it exists, we’ll send a reset link.</p><ForgotPasswordForm/></main>}
