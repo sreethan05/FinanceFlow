@@ -1,6 +1,6 @@
 # FinanceFlow
 
-FinanceFlow is a personal finance platform built with Next.js App Router, React, TypeScript, Tailwind CSS, Prisma, and PostgreSQL. It includes authenticated financial records, budgets, analytics, savings goals, recurring payments, notifications, exports, receipt extraction, AI insights, and a grounded financial assistant.
+FinanceFlow includes a Flutter mobile client in [`flutter_app/`](./flutter_app/README.md) and a PostgreSQL-backed Next.js API/server in this repository. The mobile app provides account access, a live cash-flow overview, transaction creation and history, budget progress, and savings goals. The server also includes recurring payments, exports, receipt extraction, AI insights, and a grounded financial assistant.
 
 ## Features
 
@@ -28,6 +28,8 @@ The architecture, ER diagram, schema decisions, endpoint catalog, AI boundary, a
 - Persistent private storage for receipt files; mount a persistent volume or set `RECEIPT_STORAGE_DIR`
 
 ## Local setup
+
+For the Flutter application, follow [`flutter_app/README.md`](./flutter_app/README.md). Run the API setup below first so the mobile client has a backend to connect to.
 
 1. Copy `.env.example` to `.env` and configure `DATABASE_URL` and a random `AUTH_SECRET`.
 2. Install dependencies: `npm install`.
