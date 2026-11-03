@@ -4,7 +4,7 @@ Flutter mobile client for the FinanceFlow API in the repository root. It include
 
 ## Requirements
 
-- Flutter stable with Dart 3.4 or newer
+- Flutter 3.47 or newer (Dart 3.13+)
 - Android Studio / Android SDK for Android, or Xcode on macOS for iOS
 - The FinanceFlow API and PostgreSQL database running from the repository root
 
@@ -19,15 +19,22 @@ npm run db:migrate
 npm run dev
 ```
 
-Then, in `flutter_app`, generate the platform folders once and run:
+Then, from `flutter_app`, run:
 
 ```powershell
-flutter create --org com.financeflow --project-name financeflow --platforms=android,ios .
 flutter pub get
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
 ```
 
-For local Android development over plain HTTP, add `android:usesCleartextTraffic="true"` to the generated `<application>` element in `android/app/src/main/AndroidManifest.xml`. Keep this setting limited to local development; production API traffic must use HTTPS.
+The Android debug manifest permits HTTP only for local development. Release builds disable cleartext network traffic; production API traffic must use HTTPS.
+
+Build an installable Android debug APK with:
+
+```powershell
+flutter build apk --debug --dart-define=API_BASE_URL=http://10.0.2.2:3000
+```
+
+The APK is written to `build/app/outputs/flutter-apk/app-debug.apk`. This debug build targets an Android emulator. For a physical phone, replace `10.0.2.2` with the laptop's LAN IP and rebuild after starting the backend on `0.0.0.0`. A release build needs a production HTTPS API URL and your own Android signing key.
 
 `10.0.2.2` is the Android emulator's host-machine address. For a physical phone, start the backend bound to your network interface (for example `npx next dev --webpack --hostname 0.0.0.0`), set `API_BASE_URL` to the computer's LAN address (for example `http://192.168.1.20:3000`), and make sure the phone and computer share a network. For iOS Simulator, use `http://127.0.0.1:3000`.
 

@@ -84,7 +84,8 @@ class FinanceApi {
     _check(response);
     final rows = response.data?['data'];
     if (rows is! List) return const [];
-    return rows.whereType<Map>().map((row) => Map<String, dynamic>.from(row)).toList();
+    final data = rows.whereType<Map>().map((row) => Map<String, dynamic>.from(row)).toList();
+    return type == null ? data : data.where((category) => category['type'] == type).toList();
   }
 
   Future<void> createTransaction({
