@@ -34,7 +34,7 @@ Build an installable Android debug APK with:
 flutter build apk --debug --dart-define=API_BASE_URL=http://10.0.2.2:3000
 ```
 
-The APK is written to `build/app/outputs/flutter-apk/app-debug.apk`. This debug build targets an Android emulator. For a physical phone, replace `10.0.2.2` with the laptop's LAN IP and rebuild after starting the backend on `0.0.0.0`. A release build needs a production HTTPS API URL and your own Android signing key.
+The APK is written to `build/app/outputs/flutter-apk/app-debug.apk`. For a physical phone, start the backend from the repository root with `npm run dev:mobile`, then replace `10.0.2.2` with the laptop's Wi-Fi IP and rebuild. Keep the phone and laptop on the same Wi-Fi. A release build needs a production HTTPS API URL and your own Android signing key.
 
 `10.0.2.2` is the Android emulator's host-machine address. For a physical phone, start the backend bound to your network interface (for example `npx next dev --webpack --hostname 0.0.0.0`), set `API_BASE_URL` to the computer's LAN address (for example `http://192.168.1.20:3000`), and make sure the phone and computer share a network. For iOS Simulator, use `http://127.0.0.1:3000`.
 
