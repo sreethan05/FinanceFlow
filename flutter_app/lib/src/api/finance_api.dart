@@ -4,7 +4,19 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 
-class FinanceApi {
+abstract interface class AuthApi {
+  Future<void> login(String email, String password);
+
+  Future<void> register({
+    required String name,
+    required String email,
+    required String password,
+  });
+
+  Future<void> requestPasswordReset(String email);
+}
+
+class FinanceApi implements AuthApi {
   FinanceApi._(this._dio, this._cookieJar);
 
   final Dio _dio;
@@ -44,6 +56,7 @@ class FinanceApi {
     }
   }
 
+  @override
   Future<void> login(String email, String password) async {
     final csrf = await _dio.get<Map<String, dynamic>>('/api/auth/csrf');
     final csrfToken = csrf.data?['csrfToken'] as String?;
@@ -72,6 +85,7 @@ class FinanceApi {
     }
   }
 
+  @override
   Future<void> register(
       {required String name,
       required String email,
@@ -85,6 +99,7 @@ class FinanceApi {
     _check(response);
   }
 
+  @override
   Future<void> requestPasswordReset(String email) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/auth/forgot-password',

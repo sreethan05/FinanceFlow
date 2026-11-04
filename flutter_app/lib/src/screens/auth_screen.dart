@@ -4,7 +4,7 @@ import '../api/finance_api.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key, required this.api, required this.onSignedIn});
-  final FinanceApi api;
+  final AuthApi api;
   final VoidCallback onSignedIn;
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -207,11 +207,19 @@ class _AuthScreenState extends State<AuthScreen> {
       widget.onSignedIn();
     } catch (error) {
       if (mounted)
-        setState(() => _error = accountCreated
-            ? 'Your account was created, but sign-in did not finish. Try signing in with the same email and password. If email verification is enabled, check your inbox first.'
-            : error is FinanceApiException
+        setState(() {
+          if (accountCreated) {
+            // Registration is already committed. Switch to sign-in so retrying
+            // does not attempt to create the same email a second time.
+            _register = false;
+            _error =
+                'Your account was created. Sign in with the same email and password.';
+          } else {
+            _error = error is FinanceApiException
                 ? error.message
-                : 'Could not connect. Check that your laptop server is running and the phone is on the same Wi-Fi.');
+                : 'Could not connect. Check that your laptop server is running and the phone is on the same Wi-Fi.';
+          }
+        });
     } finally {
       if (mounted) setState(() => _busy = false);
     }

@@ -39,6 +39,40 @@ void main() {
     expect(find.text('Create account'), findsOneWidget);
   });
 
+  testWidgets(
+      'switches to sign in if account creation succeeds but auto sign-in fails',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+        home:
+            AuthScreen(api: _SignupAutoLoginFailureApi(), onSignedIn: () {})));
+    await tester
+        .ensureVisible(find.text('New to FinanceFlow? Create an account'));
+    await tester.tap(find.text('New to FinanceFlow? Create an account'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Test Person');
+    await tester.enterText(
+        find.byType(TextFormField).at(1), 'mobile@example.test');
+    await tester.enterText(
+        find.byType(TextFormField).at(2), 'Correct-Horse-1!');
+    await tester.ensureVisible(find.text('Create account'));
+    await tester.tap(find.text('Create account'));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.text(
+            'Your account was created. Sign in with the same email and password.'),
+        findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
+    expect(find.text('Create account'), findsNothing);
+    expect(
+        (tester
+                .widget<TextFormField>(find.byType(TextFormField).at(0))
+                .controller)
+            ?.text,
+        'mobile@example.test');
+  });
+
   testWidgets('opens the password reset flow from sign in', (tester) async {
     await tester
         .pumpWidget(MaterialApp(home: AuthScreen(api: api, onSignedIn: () {})));
@@ -52,4 +86,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Reset your password'), findsNothing);
   });
+}
+
+class _SignupAutoLoginFailureApi implements AuthApi {
+  @override
+  Future<void> register(
+      {required String name,
+      required String email,
+      required String password}) async {}
+
+  @override
+  Future<void> login(String email, String password) async {
+    throw const FinanceApiException('Email or password is incorrect.');
+  }
+
+  @override
+  Future<void> requestPasswordReset(String email) async {}
 }
