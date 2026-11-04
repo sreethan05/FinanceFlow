@@ -14,15 +14,27 @@ class FinanceFlowApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF126B52), brightness: Brightness.light),
+          colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF126B52), brightness: Brightness.light),
           scaffoldBackgroundColor: const Color(0xFFF5F7F5),
-          appBarTheme: const AppBarTheme(backgroundColor: Color(0xFFF5F7F5), surfaceTintColor: Colors.transparent),
-          cardTheme: CardThemeData(color: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFFE7ECE8)))),
+          appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFFF5F7F5),
+              surfaceTintColor: Colors.transparent),
+          cardTheme: CardThemeData(
+              color: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: const BorderSide(color: Color(0xFFE7ECE8)))),
           inputDecorationTheme: InputDecorationTheme(
             filled: true,
             fillColor: const Color(0xFFF7F9F7),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE1E8E2))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE1E8E2))),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: Color(0xFFE1E8E2))),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: Color(0xFFE1E8E2))),
           ),
         ),
         home: _SessionGate(api: api),
@@ -42,8 +54,11 @@ class _SessionGateState extends State<_SessionGate> {
   Widget build(BuildContext context) => FutureBuilder<bool>(
         future: _session,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-          return snapshot.data!
+          if (!snapshot.hasData && !snapshot.hasError) {
+            return const Scaffold(
+                body: Center(child: CircularProgressIndicator()));
+          }
+          return snapshot.data == true
               ? HomeScreen(api: widget.api, onLogout: _loggedOut)
               : AuthScreen(api: widget.api, onSignedIn: _signedIn);
         },

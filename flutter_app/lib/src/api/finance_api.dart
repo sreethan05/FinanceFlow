@@ -27,14 +27,21 @@ class FinanceApi {
   }
 
   Future<bool> get hasSession async {
-    final cookies =
-        await _cookieJar.loadForRequest(Uri.parse(_dio.options.baseUrl));
-    if (!cookies.any((cookie) => cookie.name.contains('session-token')))
+    try {
+      final cookies =
+          await _cookieJar.loadForRequest(Uri.parse(_dio.options.baseUrl));
+      if (!cookies.any((cookie) => cookie.name.contains('session-token'))) {
+        return false;
+      }
+      final response = await _dio.get<dynamic>('/api/auth/session');
+      return response.statusCode == 200 &&
+          response.data is Map &&
+          (response.data as Map)['user'] is Map;
+    } catch (_) {
+      // A missing laptop server or stale local cookie must never trap the app
+      // on the launch spinner. Show the sign-in screen so users can retry.
       return false;
-    final response = await _dio.get<dynamic>('/api/auth/session');
-    return response.statusCode == 200 &&
-        response.data is Map &&
-        (response.data as Map)['user'] is Map;
+    }
   }
 
   Future<void> login(String email, String password) async {
@@ -53,7 +60,10 @@ class FinanceApi {
         'callbackUrl': '/',
         'json': 'true',
       },
-      options: Options(contentType: Headers.formUrlEncodedContentType),
+      options: Options(
+        contentType: Headers.formUrlEncodedContentType,
+        headers: const {'X-Auth-Return-Redirect': '1'},
+      ),
     );
     if (result.statusCode == null ||
         result.statusCode! >= 400 ||
@@ -72,6 +82,14 @@ class FinanceApi {
       'email': email.trim().toLowerCase(),
       'password': password,
     });
+    _check(response);
+  }
+
+  Future<void> requestPasswordReset(String email) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/auth/forgot-password',
+      data: {'email': email.trim().toLowerCase()},
+    );
     _check(response);
   }
 
