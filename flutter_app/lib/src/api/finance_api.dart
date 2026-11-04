@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
@@ -10,9 +12,8 @@ class FinanceApi {
 
   static FinanceApi create({required String cookieDirectory}) {
     const configuredUrl = String.fromEnvironment('API_BASE_URL');
-    final baseUrl = configuredUrl.isEmpty
-        ? 'http://10.0.2.2:3000'
-        : configuredUrl;
+    final baseUrl =
+        configuredUrl.isEmpty ? 'http://10.0.2.2:3000' : configuredUrl;
     final dio = Dio(BaseOptions(
       baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 10),
@@ -26,10 +27,14 @@ class FinanceApi {
   }
 
   Future<bool> get hasSession async {
-    final cookies = await _cookieJar.loadForRequest(Uri.parse(_dio.options.baseUrl));
-    if (!cookies.any((cookie) => cookie.name.contains('session-token'))) return false;
+    final cookies =
+        await _cookieJar.loadForRequest(Uri.parse(_dio.options.baseUrl));
+    if (!cookies.any((cookie) => cookie.name.contains('session-token')))
+      return false;
     final response = await _dio.get<dynamic>('/api/auth/session');
-    return response.statusCode == 200 && response.data is Map && (response.data as Map)['user'] is Map;
+    return response.statusCode == 200 &&
+        response.data is Map &&
+        (response.data as Map)['user'] is Map;
   }
 
   Future<void> login(String email, String password) async {
@@ -50,13 +55,19 @@ class FinanceApi {
       },
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
-    if (result.statusCode == null || result.statusCode! >= 400 || !await hasSession) {
+    if (result.statusCode == null ||
+        result.statusCode! >= 400 ||
+        !await hasSession) {
       throw const FinanceApiException('Email or password is incorrect.');
     }
   }
 
-  Future<void> register({required String name, required String email, required String password}) async {
-    final response = await _dio.post<Map<String, dynamic>>('/api/auth/register', data: {
+  Future<void> register(
+      {required String name,
+      required String email,
+      required String password}) async {
+    final response =
+        await _dio.post<Map<String, dynamic>>('/api/auth/register', data: {
       'name': name.trim(),
       'email': email.trim().toLowerCase(),
       'password': password,
@@ -70,12 +81,34 @@ class FinanceApi {
     return _asMap(response.data?['data']);
   }
 
-  Future<List<Map<String, dynamic>>> transactions() async {
-    final response = await _dio.get<Map<String, dynamic>>('/api/transactions', queryParameters: {'pageSize': 50});
+  Future<List<Map<String, dynamic>>> transactions(
+      {String? search, String? type}) async {
+    final response = await _dio
+        .get<Map<String, dynamic>>('/api/transactions', queryParameters: {
+      'pageSize': 50,
+      if (search != null && search.isNotEmpty) 'search': search,
+      if (type != null) 'type': type
+    });
     _check(response);
     final rows = response.data?['data'];
     if (rows is! List) return const [];
-    return rows.whereType<Map>().map((row) => Map<String, dynamic>.from(row)).toList();
+    return rows
+        .whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+  }
+
+  Future<void> updateTransaction(
+      String id, Map<String, dynamic> changes) async {
+    final response = await _dio
+        .patch<Map<String, dynamic>>('/api/transactions/$id', data: changes);
+    _check(response);
+  }
+
+  Future<void> deleteTransaction(String id) async {
+    final response =
+        await _dio.delete<Map<String, dynamic>>('/api/transactions/$id');
+    _check(response);
   }
 
   Future<List<Map<String, dynamic>>> categories({String? type}) async {
@@ -84,8 +117,32 @@ class FinanceApi {
     _check(response);
     final rows = response.data?['data'];
     if (rows is! List) return const [];
-    final data = rows.whereType<Map>().map((row) => Map<String, dynamic>.from(row)).toList();
-    return type == null ? data : data.where((category) => category['type'] == type).toList();
+    final data = rows
+        .whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+    return type == null
+        ? data
+        : data.where((category) => category['type'] == type).toList();
+  }
+
+  Future<void> createCategory(String name, String type) async {
+    final response = await _dio.post<Map<String, dynamic>>('/api/categories',
+        data: {'name': name, 'type': type});
+    _check(response);
+  }
+
+  Future<void> renameCategory(String id, String name) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/categories/$id',
+        data: {'name': name});
+    _check(response);
+  }
+
+  Future<void> deleteCategory(String id) async {
+    final response =
+        await _dio.delete<Map<String, dynamic>>('/api/categories/$id');
+    _check(response);
   }
 
   Future<void> createTransaction({
@@ -96,12 +153,14 @@ class FinanceApi {
     required DateTime date,
     String? notes,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>('/api/transactions', data: {
+    final response =
+        await _dio.post<Map<String, dynamic>>('/api/transactions', data: {
       'amount': amount,
       'type': type,
       'categoryId': categoryId,
       'description': description.trim(),
-      'transactionDate': '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
+      'transactionDate':
+          '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
       if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
     });
     _check(response);
@@ -112,7 +171,37 @@ class FinanceApi {
     _check(response);
     final rows = response.data?['data'];
     if (rows is! List) return const [];
-    return rows.whereType<Map>().map((row) => Map<String, dynamic>.from(row)).toList();
+    return rows
+        .whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+  }
+
+  Future<void> createBudget(
+      {required String categoryId,
+      required String amountLimit,
+      required int month,
+      required int year}) async {
+    final response =
+        await _dio.post<Map<String, dynamic>>('/api/budgets', data: {
+      'categoryId': categoryId,
+      'amountLimit': amountLimit,
+      'month': month,
+      'year': year
+    });
+    _check(response);
+  }
+
+  Future<void> updateBudget(String id, Map<String, dynamic> changes) async {
+    final response = await _dio.patch<Map<String, dynamic>>('/api/budgets/$id',
+        data: changes);
+    _check(response);
+  }
+
+  Future<void> deleteBudget(String id) async {
+    final response =
+        await _dio.delete<Map<String, dynamic>>('/api/budgets/$id');
+    _check(response);
   }
 
   Future<List<Map<String, dynamic>>> savingsGoals() async {
@@ -120,7 +209,154 @@ class FinanceApi {
     _check(response);
     final rows = response.data?['data'];
     if (rows is! List) return const [];
-    return rows.whereType<Map>().map((row) => Map<String, dynamic>.from(row)).toList();
+    return rows
+        .whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+  }
+
+  Future<void> createGoal(
+      {required String name,
+      required String targetAmount,
+      String currentAmount = '0',
+      DateTime? targetDate}) async {
+    final response =
+        await _dio.post<Map<String, dynamic>>('/api/savings', data: {
+      'name': name,
+      'targetAmount': targetAmount,
+      'currentAmount': currentAmount,
+      if (targetDate != null)
+        'targetDate': targetDate.toIso8601String().substring(0, 10)
+    });
+    _check(response);
+  }
+
+  Future<void> updateGoal(String id, Map<String, dynamic> changes) async {
+    final response = await _dio.patch<Map<String, dynamic>>('/api/savings/$id',
+        data: changes);
+    _check(response);
+  }
+
+  Future<void> deleteGoal(String id) async {
+    final response =
+        await _dio.delete<Map<String, dynamic>>('/api/savings/$id');
+    _check(response);
+  }
+
+  Future<Map<String, dynamic>> profile() async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/settings');
+    _check(response);
+    return _asMap(response.data?['data']);
+  }
+
+  Future<Map<String, dynamic>> updateProfile(
+      Map<String, dynamic> changes) async {
+    final response =
+        await _dio.patch<Map<String, dynamic>>('/api/settings', data: changes);
+    _check(response);
+    return _asMap(response.data?['data']);
+  }
+
+  Future<List<Map<String, dynamic>>> recurring() async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/recurring');
+    _check(response);
+    final rows = response.data?['data'];
+    if (rows is! List) return const [];
+    return rows
+        .whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+  }
+
+  Future<void> createRecurring(Map<String, dynamic> values) async {
+    final response =
+        await _dio.post<Map<String, dynamic>>('/api/recurring', data: values);
+    _check(response);
+  }
+
+  Future<void> updateRecurring(String id, Map<String, dynamic> changes) async {
+    final response = await _dio
+        .patch<Map<String, dynamic>>('/api/recurring/$id', data: changes);
+    _check(response);
+  }
+
+  Future<void> deleteRecurring(String id) async {
+    final response =
+        await _dio.delete<Map<String, dynamic>>('/api/recurring/$id');
+    _check(response);
+  }
+
+  Future<Map<String, dynamic>> notifications() async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/notifications');
+    _check(response);
+    return _asMap(response.data);
+  }
+
+  Future<void> markNotificationsRead(
+      {bool all = false, List<String> ids = const []}) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/notifications',
+        data: {'markAllRead': all, 'ids': ids});
+    _check(response);
+  }
+
+  Future<List<Map<String, dynamic>>> insights() async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/insights');
+    _check(response);
+    final rows = response.data?['data'];
+    if (rows is! List) return const [];
+    return rows
+        .whereType<Map>()
+        .map((x) => Map<String, dynamic>.from(x))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> generateInsight(
+      {String type = 'MONTHLY_REPORT'}) async {
+    final response = await _dio.post<Map<String, dynamic>>('/api/insights',
+        data: {'type': type, 'refresh': true});
+    _check(response);
+    return _asMap(response.data?['data']);
+  }
+
+  Future<List<Map<String, dynamic>>> chatHistory() async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/assistant');
+    _check(response);
+    final rows = response.data?['data'];
+    if (rows is! List) return const [];
+    return rows
+        .whereType<Map>()
+        .map((x) => Map<String, dynamic>.from(x))
+        .toList()
+        .reversed
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> askAssistant(String message) async {
+    final response = await _dio.post<Map<String, dynamic>>('/api/assistant',
+        data: {'message': message});
+    _check(response);
+    return _asMap(response.data?['data']);
+  }
+
+  Future<String> exportTransactions() async {
+    final response = await _dio.get<String>('/api/export/transactions',
+        options: Options(responseType: ResponseType.plain));
+    _check(response);
+    return response.data ?? '';
+  }
+
+  Future<Map<String, dynamic>> scanReceipt(File file) async {
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(file.path,
+          filename: file.uri.pathSegments.isEmpty
+              ? 'receipt.jpg'
+              : file.uri.pathSegments.last),
+    });
+    final response =
+        await _dio.post<Map<String, dynamic>>('/api/receipts/scan', data: form);
+    _check(response);
+    return _asMap(response.data?['data']);
   }
 
   Future<void> logout() async {
@@ -128,11 +364,13 @@ class FinanceApi {
       final csrf = await _dio.get<Map<String, dynamic>>('/api/auth/csrf');
       final csrfToken = csrf.data?['csrfToken'];
       if (csrfToken is String) {
-        await _dio.post<dynamic>('/api/auth/signout', data: {
-          'csrfToken': csrfToken,
-          'callbackUrl': '/login',
-          'json': 'true',
-        }, options: Options(contentType: Headers.formUrlEncodedContentType));
+        await _dio.post<dynamic>('/api/auth/signout',
+            data: {
+              'csrfToken': csrfToken,
+              'callbackUrl': '/login',
+              'json': 'true',
+            },
+            options: Options(contentType: Headers.formUrlEncodedContentType));
       }
     } finally {
       await _cookieJar.deleteAll();
@@ -145,7 +383,8 @@ class FinanceApi {
     final message = body is Map && body['error'] is Map
         ? (body['error'] as Map)['message']
         : null;
-    throw FinanceApiException(message is String ? message : 'Request failed. Please try again.');
+    throw FinanceApiException(
+        message is String ? message : 'Request failed. Please try again.');
   }
 
   Map<String, dynamic> _asMap(dynamic value) =>
